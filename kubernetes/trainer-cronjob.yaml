@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: trainer-cronjob
+spec:
+  schedule: "*/5 * * * *"  # Every 5 minutes
+  suspend: true  # Suspend the CronJob to stop scheduled training
+  concurrencyPolicy: Forbid  # Don't start new job if previous still running
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 600  # Delete job 10 minutes after it finishes
+      template:
+        metadata:
+          labels:
+            app: model-trainer
+        spec:
+          serviceAccountName: trainer-serviceaccount
+          containers:
+          - name: model-trainer
+            image: sihaoz826/movie_trainer:latest
+            env:
+            - name: SHARED_VOLUME_PATH
+              value: "/shared-volume"
+            - name: INFERENCE_INSTANCE
+              value: "inference_2"
+            - name: MLFLOW_TRACKING_URI
+              value: "http://mlflow-service:5000"
+            - name: AZURE_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: azure-blob-secret
+                  key: connectionstring
+            - name: RATINGS_BLOB_CONTAINER
+              value: "ratings"
+            - name: RATINGS_BLOB_PREFIX
+              value: "incoming"
+            - name: RATINGS_LOOKBACK_DAYS
+              value: "1"
+            volumeMounts:
+            - name: model-volume
+              mountPath: /shared-volume
+            resources:
+              requests:
+                cpu: "500m"
+                memory: "1Gi"
+              limits:
+                cpu: "2000m"
+                memory: "2Gi"
+          volumes:
+          - name: model-volume
+            persistentVolumeClaim:
+              claimName: model-pvc
+          restartPolicy: OnFailure
+          terminationGracePeriodSeconds: 30
+

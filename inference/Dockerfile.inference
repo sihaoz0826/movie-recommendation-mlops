@@ -1,0 +1,26 @@
+# Use a lightweight Python image
+FROM python:3.9-slim
+
+# Install system dependencies required for NumPy/SciPy/implicit (OpenMP library)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the app files (from inference/ subdirectory)
+COPY inference/app.py /app
+
+# Copy requirements and install dependencies
+COPY inference/requirements.txt /app
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Expose the application ports
+# 8082: Main inference endpoint
+# 8083: Health check endpoint (separate port to avoid queue delays)
+EXPOSE 8082 8083
+
+# Run the Flask app
+CMD ["python", "app.py"]

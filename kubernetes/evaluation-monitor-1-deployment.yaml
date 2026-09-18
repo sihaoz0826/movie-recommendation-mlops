@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evaluation-monitor-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evaluation-monitor
+      instance: inference-1
+  template:
+    metadata:
+      labels:
+        app: evaluation-monitor
+        instance: inference-1
+    spec:
+      containers:
+      - name: evaluation-monitor
+        image: sihaoz826/evaluation-monitor:latest
+        command: ["python", "-u", "evaluation_monitor.py"]
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "20.109.59.65:9092"
+        - name: KAFKA_TOPIC
+          value: "movielog1"
+        - name: INFERENCE_INSTANCE
+          value: "inference_1"
+        - name: MODEL_RELOAD_CHECK_INTERVAL
+          value: "30"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8084"
+        volumeMounts:
+        - name: model-volume
+          mountPath: /model_files
+          readOnly: true
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8084
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8084
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: model-volume
+        persistentVolumeClaim:
+          claimName: model-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evaluation-monitor-1-service
+  labels:
+    app: evaluation-monitor
+    instance: inference-1
+spec:
+  selector:
+    app: evaluation-monitor
+    instance: inference-1
+  ports:
+  - port: 8084
+    targetPort: 8084
+  type: ClusterIP
+

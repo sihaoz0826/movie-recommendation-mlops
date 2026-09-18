@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-consumer
+  template:
+    metadata:
+      labels:
+        app: kafka-consumer
+    spec:
+      containers:
+      - name: kafka-consumer
+        image: sihaoz826/kafka-consumer:latest
+        command: ["python", "-u", "kafka_consumer_ratings.py"]
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "172.206.116.1:9092"  # Use simulator VM's public IP
+        - name: KAFKA_TOPIC
+          value: "movielog1"
+        - name: SAVE_BATCH_SIZE
+          value: "1000"
+        - name: AZURE_STORAGE_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: azure-blob-secret
+              key: connectionstring
+        - name: RATINGS_BLOB_CONTAINER
+          value: "ratings"
+        - name: RATINGS_BLOB_PREFIX
+          value: "incoming"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+

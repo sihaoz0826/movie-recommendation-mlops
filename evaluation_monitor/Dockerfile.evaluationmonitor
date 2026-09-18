@@ -1,0 +1,22 @@
+FROM python:3.9-slim
+
+# Install system dependencies required for implicit (OpenMP library)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy requirements first for better Docker layer caching
+COPY requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the monitor script
+COPY evaluation_monitor.py .
+
+# Run the monitor
+CMD ["python", "-u", "evaluation_monitor.py"]
+
