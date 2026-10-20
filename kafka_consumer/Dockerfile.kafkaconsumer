@@ -1,0 +1,18 @@
+# Build from repository root:
+#   docker build -f kafka_consumer/Dockerfile.kafkaconsumer -t sihaoz826/kafka-consumer:latest .
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Copy requirements first for better Docker layer caching
+COPY kafka_consumer/requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the consumer script and shared blob helper
+COPY kafka_consumer/kafka_consumer_ratings.py .
+COPY shared/ratings_blob.py .
+
+# Run the consumer
+CMD ["python", "kafka_consumer_ratings.py"]

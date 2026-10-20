@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference-2-deployment
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: inference-2
+  template:
+    metadata:
+      labels:
+        app: inference-2
+    spec:
+      containers:
+      - name: inference
+        image: sihaoz826/movie_inference:latest
+        ports:
+        - containerPort: 8082
+          name: inference
+        - containerPort: 8083
+          name: health
+        env:
+        - name: INFERENCE_INSTANCE
+          value: "inference_2"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8082"
+        volumeMounts:
+        - name: model-volume
+          mountPath: /model_files
+          readOnly: true
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "256Mi"
+          limits:
+            cpu: "2000m"
+            memory: "750Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8083
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8083
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
+      volumes:
+      - name: model-volume
+        persistentVolumeClaim:
+          claimName: model-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inference-2-service
+spec:
+  type: ClusterIP
+  selector:
+    app: inference-2
+  ports:
+  - port: 8082
+    targetPort: 8082
+    name: inference
+  - port: 8083
+    targetPort: 8083
+    name: health
+

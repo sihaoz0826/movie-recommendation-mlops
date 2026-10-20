@@ -1,0 +1,8 @@
+FROM ghcr.io/mlflow/mlflow:v2.8.1
+
+# Install Azure Storage SDK for Azure Blob Storage support
+RUN pip install --no-cache-dir azure-storage-blob
+
+# Keep the default MLflow server command
+CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--serve-artifacts"]
+

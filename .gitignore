@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+build/
+
+# Models & data (produced/consumed at runtime)
+*.pkl
+*.pt
+*.pth
+model_files/
+*.csv
+
+# Env / secrets
+.env
+*.pem
+*.key
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/

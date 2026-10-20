@@ -1,0 +1,28 @@
+# Build from repository root:
+#   docker build -f retraining/Dockerfile.trainer -t sihaoz826/movie_trainer:latest .
+FROM python:3.10-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Install system dependencies required for NumPy/SciPy/implicit (OpenMP library)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file
+COPY retraining/requirements.txt /app/
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy training script and shared blob helper (ratings CSV is not baked in)
+COPY retraining/train_als.py /app/
+COPY shared/ratings_blob.py /app/
+
+# Create directory for shared volume (will be mounted)
+RUN mkdir -p /shared-volume
+
+# Run the training script
+CMD ["python", "train_als.py"]
